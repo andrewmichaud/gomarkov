@@ -12,7 +12,7 @@ import (
     "net/http"
 )
 
-const source_file_path string = "/Users/amichaud/Downloads/holmes.txt"
+const source_file_path string = "holmes.txt"
 
 // We use these to tell when we've found the end of a sentence.
 const punctuation = ".?!"
