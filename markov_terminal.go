@@ -5,7 +5,8 @@ import (
     "os"
     "bufio"
     "strings"
-    "rand"
+    "math/rand"
+    "time"
 )
 
 const source_file_path string = "/Users/amichaud/Downloads/holmes.txt"
@@ -80,7 +81,52 @@ func generate_dictionary() map[string][]string {
 // Generate a sentence, using Markov text generation and the provided dictionary.
 func generate_sentence(dictionary map[string][]string) string {
 
-    current_word = dictionar
+    // Random seed used for selection of words.  Use time for something approximating randomness.
+    rand.Seed(int64(time.Now().Nanosecond()))
+
+    // Grab first word in sentence.
+    current_slice := dictionary["$"]
+    current_word := current_slice[rand.Intn(len(current_slice))]
+    words := []string{current_word}
+
+    // Continue until we reach the end of a sentence.
+    for !strings.ContainsAny(current_word, punctuation) {
+
+        // Find new slice and new word from that slice.
+        current_slice = dictionary[current_word]
+        current_word = current_slice[rand.Intn(len(current_slice))]
+
+        // Add new word to sentence.
+        words = append(words, current_word)
+    }
+
+    // Join all words into proper sentence and return.
+    return strings.Join(words, " ")
+}
+
+// Version of generate_sentence meant to be used as a goroutine.
+func go_generate_sentence(dictionary map[string][]string, channel chan string) {
+    out := generate_sentence(dictionary)
+    channel <- out
+}
+
+// Generate N sentences, using generate_sentence as a helper function and goroutines.
+func generate_sentences(dictionary map[string][]string, count int) []string {
+
+    // Put sentences here.
+    sentences := make([]string, count)
+
+    c := make(chan string, count)
+
+    for i := 0; i < count; i++ {
+        go go_generate_sentence(dictionary, c)
+    }
+
+    for i := 0; i < count; i++ {
+        sentences[i] = <- c
+    }
+
+    return sentences
 }
 
 func main() {
@@ -88,8 +134,17 @@ func main() {
     // Get dictionary
     dictionary := generate_dictionary()
 
-    for k := range dictionary {
-        fmt.Println("key:", k, "val:", dictionary[k])
+    //for k := range dictionary {
+    //    fmt.Println("key:", k, "val:", dictionary[k])
+    //}
+
+    // Generate sentence.
+    //sentence := generate_sentence(dictionary)
+
+    sentences := generate_sentences(dictionary, 4)
+    fmt.Println("number sentences:", len(sentences))
+    for i, v := range sentences {
+        fmt.Println(i, v)
     }
 
 
